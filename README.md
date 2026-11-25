@@ -72,7 +72,7 @@ PostgreSQL installation. Before deployment, never commit `.env` files.
 1. Push this repository to GitHub and create a Render PostgreSQL database.
 2. In Render, create a **Blueprint** from this repository (or create a Python
    web service with `backend` as its root directory). The [render.yaml](./render.yaml)
-   configures Gunicorn, static assets, migrations and the API health check.
+   configures Gunicorn, static assets and the API health check.
 3. Copy the database's **Internal Database URL** into the web service's
    `DATABASE_URL` environment variable (the backend requires PostgreSQL in
    production). Keep the database and web service in the same Render region.
@@ -85,9 +85,16 @@ PostgreSQL installation. Before deployment, never commit `.env` files.
      `https://fithub-elite.vercel.app` (include the scheme, no trailing slash).
    - `MISTRAL_API_KEY`: optional; add it as a secret in Render if using AI.
 
-   Render runs `collectstatic` and `migrate` during build and serves the API
-   with Gunicorn. The health endpoint `/api/health/` checks database readiness;
-   it returns HTTP 503 if the database or core schema is unavailable.
+   Render collects static files during build. At runtime, the start command
+   runs `python manage.py migrate --noinput` against the web service's
+   configured `DATABASE_URL` and starts Gunicorn only if every migration
+   succeeds. This is safe to rerun: Django applies only unapplied migrations
+   and does not reset or drop the database. The health endpoint
+   `/api/health/` checks database readiness and returns HTTP 503 if the
+   database or core schema is unavailable.
+   If the web service was created manually rather than from the Blueprint,
+   set its Start Command to
+   `python manage.py migrate --noinput && gunicorn fithub.wsgi:application --bind 0.0.0.0:$PORT`.
 
 ## Deploy the frontend to Vercel
 

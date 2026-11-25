@@ -4,7 +4,7 @@ from unittest.mock import patch
 
 from django.contrib.auth.hashers import check_password
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.db.utils import OperationalError
+from django.db.utils import ProgrammingError
 from django.test import override_settings
 from django.utils import timezone
 from rest_framework.test import APITestCase
@@ -58,7 +58,10 @@ class GymAPITests(APITestCase):
         self.assertEqual(health.data, {"status": "ok"})
 
     def test_health_returns_unavailable_when_database_query_fails(self):
-        with patch("gym.views.User.objects.exists", side_effect=OperationalError("database unavailable")):
+        with patch(
+            "gym.views.User.objects.exists",
+            side_effect=ProgrammingError('relation "gym_user" does not exist'),
+        ):
             response = self.client.get("/api/health/")
         self.assertEqual(response.status_code, 503)
         self.assertEqual(response.data["database"], "unavailable")
