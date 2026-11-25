@@ -85,16 +85,16 @@ PostgreSQL installation. Before deployment, never commit `.env` files.
      `https://fithub-elite.vercel.app` (include the scheme, no trailing slash).
    - `MISTRAL_API_KEY`: optional; add it as a secret in Render if using AI.
 
-   Render collects static files during build. At runtime, the start command
-   runs `python manage.py migrate --noinput` against the web service's
-   configured `DATABASE_URL` and starts Gunicorn only if every migration
-   succeeds. This is safe to rerun: Django applies only unapplied migrations
-   and does not reset or drop the database. The health endpoint
+   At runtime, the start command runs migrations and collects Django admin
+   static assets against the deployed service configuration before starting
+   Gunicorn. The web service starts only if both commands succeed. Migrations
+   are safe to rerun: Django applies only unapplied migrations and does not
+   reset or drop the database. The health endpoint
    `/api/health/` checks database readiness and returns HTTP 503 if the
    database or core schema is unavailable.
    If the web service was created manually rather than from the Blueprint,
    set its Start Command to
-   `python manage.py migrate --noinput && gunicorn fithub.wsgi:application --bind 0.0.0.0:$PORT`.
+   `python manage.py migrate --noinput && python manage.py collectstatic --noinput && gunicorn fithub.wsgi:application --bind 0.0.0.0:$PORT`.
 
 ## Deploy the frontend to Vercel
 

@@ -67,6 +67,11 @@ class GymAPITests(APITestCase):
         self.assertEqual(health.status_code, 200)
         self.assertEqual(health.data, {"status": "ok"})
 
+    def test_admin_login_page_renders_with_root_relative_static_assets(self):
+        response = self.client.get("/admin/login/", secure=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'href="/static/admin/css/base.')
+
     def test_health_returns_unavailable_when_database_query_fails(self):
         with patch(
             "gym.views.User.objects.exists",
