@@ -1,4 +1,13 @@
-const API_BASE = (process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api").replace(/\/$/, "");
+export function normalizeApiBase(value?: string) {
+  const base = (value || "http://127.0.0.1:8000/api").trim().replace(/\/+$/, "");
+  return /\/api$/i.test(base) ? base : `${base}/api`;
+}
+
+const API_BASE = normalizeApiBase(process.env.NEXT_PUBLIC_API_BASE_URL);
+
+export function getApiBase() {
+  return API_BASE;
+}
 
 export type ApiList<T> = {
   count: number;
@@ -64,6 +73,9 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
         .join(" ");
     } catch {
       message = response.statusText || message;
+    }
+    if (response.status === 404 && /\/auth\/register\/?$/.test(url)) {
+      message = "Registration endpoint not found. Check that NEXT_PUBLIC_API_BASE_URL points to your Render API and includes /api, then redeploy Vercel.";
     }
     throw new ApiError(message, response.status);
   }

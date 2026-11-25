@@ -94,8 +94,12 @@ PostgreSQL installation. Before deployment, never commit `.env` files.
    `frontend`.
 2. Add this environment variable for Production (and Preview if desired):
    - `NEXT_PUBLIC_API_BASE_URL`: `https://<your-render-api-hostname>/api`
+     (the frontend also accepts the Render origin without `/api`).
 3. Deploy or redeploy. Add each Vercel origin that should call the API to the
    Render `CORS_ALLOWED_ORIGINS` value as a comma-separated list.
+
+`NEXT_PUBLIC_API_BASE_URL` is embedded into the frontend at build time. After
+changing it in Vercel, redeploy the frontend for the new value to take effect.
 
 Do not put `DJANGO_SECRET_KEY`, `DATABASE_URL` or `MISTRAL_API_KEY` in Vercel.
 Only the API base URL belongs in the frontend environment.

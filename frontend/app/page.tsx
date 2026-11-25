@@ -12,8 +12,9 @@ import {
   Area, AreaChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from "recharts";
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { api, ApiError, ApiList, clearToken, getToken, saveToken } from "@/lib/api";
+import { api, ApiError, ApiList, clearToken, getApiBase, getToken, saveToken } from "@/lib/api";
 import { Field, ModuleSpec, modules } from "@/lib/modules";
+import LandingPage from "@/app/landing-page";
 
 type UserInfo = { id: number; username: string; first_name: string; last_name: string; email: string; role: string };
 type DashboardData = {
@@ -56,8 +57,10 @@ function getError(error: unknown) {
   return error instanceof ApiError ? error.message : "Something went wrong. Please try again.";
 }
 
-function AuthScreen({ onLogin }: { onLogin: () => void }) {
-  const [register, setRegister] = useState(false);
+function AuthScreen({ onLogin, onBack, initialRegister }: {
+  onLogin: () => void; onBack: () => void; initialRegister: boolean;
+}) {
+  const [register, setRegister] = useState(initialRegister);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -120,6 +123,7 @@ function AuthScreen({ onLogin }: { onLogin: () => void }) {
           <p className="relative text-xs text-white/45">Thoughtful tools for people who move people.</p>
         </section>
         <section className="flex min-h-[620px] flex-col justify-center px-7 py-12 sm:px-12">
+          <button onClick={onBack} className="mb-7 w-fit text-xs font-medium text-subtle transition hover:text-main">← Back to FitHub Elite</button>
           <div className="mb-10 flex items-center gap-3 lg:hidden">
             <div className="grid h-10 w-10 place-items-center rounded-xl bg-forest text-lime"><Activity size={20} /></div>
             <span className="text-lg font-semibold">FitHub <span className="text-forest">Elite</span></span>
@@ -450,7 +454,7 @@ function ModuleView({ spec, role }: { spec: ModuleSpec; role: string }) {
   }
 
   function exportRows(format: string) {
-    const base = (process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api").replace(/\/$/, "");
+    const base = getApiBase();
     const token = getToken();
     void fetch(`${base}/exports/${spec.key}/?output=${format}`, { headers: token ? { Authorization: `Bearer ${token}` } : {} })
       .then(async (response) => {
@@ -466,7 +470,7 @@ function ModuleView({ spec, role }: { spec: ModuleSpec; role: string }) {
   }
 
   async function downloadReceipt(row: Row) {
-    const base = (process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8000/api").replace(/\/$/, "");
+    const base = getApiBase();
     const token = getToken();
     try {
       const response = await fetch(`${base}/payments/${row.id}/receipt/`, {
@@ -665,6 +669,8 @@ export default function Home() {
   const [user, setUser] = useState<UserInfo | null>(null);
   const [checking, setChecking] = useState(true);
   const [authError, setAuthError] = useState("");
+  const [showAuth, setShowAuth] = useState(false);
+  const [initialRegister, setInitialRegister] = useState(false);
   const loadProfile = useCallback(async () => {
     const token = getToken();
     if (!token) { setUser(null); setChecking(false); return; }
@@ -678,6 +684,8 @@ export default function Home() {
   useEffect(() => { void Promise.resolve().then(loadProfile); }, [loadProfile]);
   function logout() { clearToken(); setUser(null); }
   if (checking) return <main className="canvas grid min-h-screen place-items-center"><div className="flex items-center gap-3 text-sm text-subtle"><span className="h-5 w-5 animate-spin rounded-full border-2 border-[#b8ce9a] border-t-forest" /> Loading your workspace…</div></main>;
-  if (!user) return <><AuthScreen onLogin={() => void loadProfile()} />{authError && <div className="fixed bottom-4 left-1/2 -translate-x-1/2 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 shadow-soft">{authError}</div>}</>;
+  if (!user) return showAuth
+    ? <AuthScreen onLogin={() => void loadProfile()} initialRegister={initialRegister} onBack={() => setShowAuth(false)} />
+    : <LandingPage notice={authError} onAuth={(register) => { setInitialRegister(register); setShowAuth(true); }} />;
   return <Shell user={user} onLogout={logout} />;
 }
