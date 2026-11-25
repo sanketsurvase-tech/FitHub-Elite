@@ -4,6 +4,7 @@ from unittest.mock import patch
 
 from django.contrib.auth.hashers import check_password
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.db.utils import OperationalError
 from django.test import override_settings
 from django.utils import timezone
 from rest_framework.test import APITestCase
@@ -46,6 +47,21 @@ class GymAPITests(APITestCase):
         user = User.objects.get(username="new-member")
         self.assertTrue(check_password("DifferentStrong123!", user.password))
         self.assertTrue(Member.objects.filter(user=user, phone="555-0101").exists())
+
+    def test_api_root_and_health_report_service_and_database_readiness(self):
+        root = self.client.get("/")
+        self.assertEqual(root.status_code, 200)
+        self.assertEqual(root.data["name"], "FitHub Elite API")
+
+        health = self.client.get("/api/health/")
+        self.assertEqual(health.status_code, 200)
+        self.assertEqual(health.data, {"status": "ok"})
+
+    def test_health_returns_unavailable_when_database_query_fails(self):
+        with patch("gym.views.User.objects.exists", side_effect=OperationalError("database unavailable")):
+            response = self.client.get("/api/health/")
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(response.data["database"], "unavailable")
 
     def test_member_cannot_read_other_members(self):
         another_user = User.objects.create_user(

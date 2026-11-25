@@ -74,8 +74,8 @@ PostgreSQL installation. Before deployment, never commit `.env` files.
    web service with `backend` as its root directory). The [render.yaml](./render.yaml)
    configures Gunicorn, static assets, migrations and the API health check.
 3. Copy the database's **Internal Database URL** into the web service's
-   `DATABASE_URL` environment variable. Keep the database and web service in
-   the same Render region.
+   `DATABASE_URL` environment variable (the backend requires PostgreSQL in
+   production). Keep the database and web service in the same Render region.
 4. Set the web service environment variables:
    - `DJANGO_SECRET_KEY`: generate a new secret (Render can generate it).
    - `DJANGO_DEBUG`: `false`.
@@ -86,7 +86,8 @@ PostgreSQL installation. Before deployment, never commit `.env` files.
    - `MISTRAL_API_KEY`: optional; add it as a secret in Render if using AI.
 
    Render runs `collectstatic` and `migrate` during build and serves the API
-   with Gunicorn. The health endpoint is `/api/health/`.
+   with Gunicorn. The health endpoint `/api/health/` checks database readiness;
+   it returns HTTP 503 if the database or core schema is unavailable.
 
 ## Deploy the frontend to Vercel
 

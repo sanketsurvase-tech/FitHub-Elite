@@ -71,10 +71,11 @@ ASGI_APPLICATION = "fithub.asgi.application"
 if "test" in os.sys.argv:
     DATABASES = {"default": {"ENGINE": "django.db.backends.sqlite3", "NAME": ":memory:"}}
 else:
-    DATABASE_URL = os.getenv(
-        "DATABASE_URL",
-        "postgresql://postgres:@localhost:5432/fithub_elite",
-    )
+    DATABASE_URL = os.getenv("DATABASE_URL")
+    if not DATABASE_URL and not DEBUG:
+        raise ImproperlyConfigured("Set DATABASE_URL before running in production.")
+    if not DATABASE_URL:
+        DATABASE_URL = "postgresql://postgres:@localhost:5432/fithub_elite"
     DATABASES = {
         "default": dj_database_url.parse(
             DATABASE_URL,
@@ -82,6 +83,9 @@ else:
             ssl_require=not DEBUG,
         )
     }
+    if not DEBUG and DATABASES["default"]["ENGINE"] != "django.db.backends.postgresql":
+        raise ImproperlyConfigured("Production DATABASE_URL must use PostgreSQL.")
+    DATABASES["default"]["CONN_HEALTH_CHECKS"] = True
 
 AUTH_USER_MODEL = "gym.User"
 AUTH_PASSWORD_VALIDATORS = [

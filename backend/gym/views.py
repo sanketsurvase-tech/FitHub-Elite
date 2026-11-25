@@ -1,12 +1,13 @@
 import csv
+import logging
 import os
 from datetime import timedelta
 from io import BytesIO
 from pathlib import Path
 
 import requests
+from django.db import DatabaseError, transaction
 from django.http import FileResponse, Http404, HttpResponse
-from django.db import transaction
 from django.db.models import Count, Q, Sum
 from django.utils import timezone
 from rest_framework import generics, status, viewsets
@@ -36,6 +37,7 @@ STAFF = {User.Role.ADMIN, User.Role.RECEPTIONIST}
 COACHES = {User.Role.ADMIN, User.Role.TRAINER}
 OPERATIONS = {User.Role.ADMIN, User.Role.RECEPTIONIST, User.Role.TRAINER}
 ALL_ROLES = {choice[0] for choice in User.Role.choices}
+logger = logging.getLogger(__name__)
 
 
 def current_member(user):
@@ -844,7 +846,25 @@ class AIAdviceView(APIView):
 @api_view(["GET"])
 @permission_classes([AllowAny])
 def api_health(request):
+    try:
+        User.objects.exists()
+    except DatabaseError:
+        logger.exception("Database readiness check failed.")
+        return Response(
+            {"status": "unavailable", "database": "unavailable"},
+            status=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )
     return Response({"status": "ok"})
+
+
+@api_view(["GET"])
+@permission_classes([AllowAny])
+def api_root(request):
+    return Response({
+        "name": "FitHub Elite API",
+        "status": "ok",
+        "health": "/api/health/",
+    })
 
 
 class ExportView(APIView):

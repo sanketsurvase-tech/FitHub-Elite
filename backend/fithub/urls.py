@@ -10,6 +10,7 @@ from gym.views import (
     MealPlanViewSet, MemberViewSet, MembershipViewSet, NotificationViewSet,
     NutritionLogViewSet, PackageViewSet, PaymentViewSet, RegistrationView,
     StaffViewSet, WorkoutLogViewSet, WorkoutPlanViewSet, ProfileView, api_health,
+    api_root,
 )
 
 router = DefaultRouter()
@@ -34,6 +35,7 @@ router.register("notifications", NotificationViewSet)
 router.register("audit-logs", AuditLogViewSet)
 
 urlpatterns = [
+    path("", api_root, name="api-root"),
     path("admin/", admin.site.urls),
     path("api/health/", api_health),
     path("api/auth/token/", TokenObtainPairView.as_view(), name="token_obtain_pair"),
