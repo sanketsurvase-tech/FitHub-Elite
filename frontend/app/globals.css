@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  --surface: #ffffff;
+  --canvas: #f5f7f4;
+  --text: #15211a;
+  --subtle: #718078;
+  --border: #e5eae5;
+  --soft: #f0f3ef;
+}
+
+.dark {
+  color-scheme: dark;
+  --surface: #17211b;
+  --canvas: #101712;
+  --text: #eff5ef;
+  --subtle: #a0afa4;
+  --border: #2a3930;
+  --soft: #202c24;
+}
+
+* { box-sizing: border-box; }
+body { background: var(--canvas); color: var(--text); }
+button, input, textarea, select { font: inherit; }
+::selection { background: #d7f6a1; color: #15211a; }
+
+.surface { background: var(--surface); }
+.canvas { background: var(--canvas); }
+.soft { background: var(--soft); }
+.text-main { color: var(--text); }
+.text-subtle { color: var(--subtle); }
+.border-line { border-color: var(--border); }
+
+.scrollbar-thin { scrollbar-width: thin; scrollbar-color: #b7c3ba transparent; }
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.animate-rise { animation: rise .35s ease-out both; }
