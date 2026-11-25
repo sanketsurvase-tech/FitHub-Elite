@@ -132,7 +132,8 @@ not public `/media/` URLs. An object-storage backend is not included.
 
 ## API and security notes
 
-The API is rooted at `/api/`. Obtain JWTs from `POST /api/auth/token/` and send
+The API is rooted at `/api/`. Obtain JWTs from `POST /api/auth/login/` (or
+`/api/auth/token/`) and send
 the access token as `Authorization: Bearer <token>`. Member registration is
 `POST /api/auth/register/`. JWTs are held in browser session storage; deploy
 behind HTTPS and set an appropriate production secret before exposing the app.

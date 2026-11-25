@@ -48,6 +48,16 @@ class GymAPITests(APITestCase):
         self.assertTrue(check_password("DifferentStrong123!", user.password))
         self.assertTrue(Member.objects.filter(user=user, phone="555-0101").exists())
 
+    def test_auth_login_returns_jwt_tokens(self):
+        response = self.client.post(
+            "/api/auth/login/",
+            {"username": self.member_user.username, "password": "StrongPass123!"},
+            format="json",
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("access", response.data)
+        self.assertIn("refresh", response.data)
+
     def test_api_root_and_health_report_service_and_database_readiness(self):
         root = self.client.get("/")
         self.assertEqual(root.status_code, 200)
