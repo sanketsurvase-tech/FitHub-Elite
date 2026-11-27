@@ -3,6 +3,7 @@ from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
 from django.contrib.auth.hashers import check_password
+from django.core.management import call_command
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db.utils import ProgrammingError
 from django.test import override_settings
@@ -10,8 +11,8 @@ from django.utils import timezone
 from rest_framework.test import APITestCase
 
 from .models import (
-    Attendance, GymClass, Member, Membership, NutritionLog, Package, Payment,
-    User, WorkoutLog,
+    Attendance, FitnessProgress, GymClass, Member, Membership, NutritionLog, Package,
+    Payment, User, WorkoutLog, WorkoutPlan,
 )
 
 
@@ -68,9 +69,15 @@ class GymAPITests(APITestCase):
         self.assertEqual(health.data, {"status": "ok"})
 
     def test_admin_login_page_renders_with_root_relative_static_assets(self):
-        response = self.client.get("/admin/login/", secure=True)
+        with override_settings(STORAGES={
+            "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+            "staticfiles": {
+                "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage"
+            },
+        }):
+            response = self.client.get("/admin/login/", secure=True)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'href="/static/admin/css/base.')
+        self.assertContains(response, 'href="/static/admin/css/base.css"')
 
     def test_health_returns_unavailable_when_database_query_fails(self):
         with patch(
@@ -80,6 +87,34 @@ class GymAPITests(APITestCase):
             response = self.client.get("/api/health/")
         self.assertEqual(response.status_code, 503)
         self.assertEqual(response.data["database"], "unavailable")
+
+    def test_demo_seed_is_varied_and_safe_to_run_twice(self):
+        from io import StringIO
+
+        User.objects.create_superuser(
+            username="demo-seeder",
+            email="demo-seeder@example.com",
+            password="StrongPass123!",
+        )
+        output = StringIO()
+        call_command("seed_demo_data", members=3, stdout=output)
+        first_counts = {
+            "members": Member.objects.filter(user__username__startswith="demo.member.").count(),
+            "payments": Payment.objects.filter(reference__startswith="[DEMO] PAY-").count(),
+            "attendance": Attendance.objects.filter(source="demo").count(),
+        }
+        call_command("seed_demo_data", members=3, stdout=StringIO())
+        second_counts = {
+            "members": Member.objects.filter(user__username__startswith="demo.member.").count(),
+            "payments": Payment.objects.filter(reference__startswith="[DEMO] PAY-").count(),
+            "attendance": Attendance.objects.filter(source="demo").count(),
+        }
+        self.assertEqual(first_counts, {"members": 3, "payments": 3, "attendance": 6})
+        self.assertEqual(second_counts, first_counts)
+        self.assertFalse(User.objects.get(username="demo.member.0001").has_usable_password())
+        self.assertTrue(WorkoutPlan.objects.filter(name__startswith="[DEMO]").exists())
+        self.assertTrue(FitnessProgress.objects.filter(goal__startswith="[DEMO]").exists())
+        self.assertTrue(GymClass.objects.filter(name__startswith="[DEMO]").exists())
 
     def test_member_cannot_read_other_members(self):
         another_user = User.objects.create_user(

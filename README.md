@@ -130,6 +130,15 @@ not public `/media/` URLs. An object-storage backend is not included.
   Mistral Codestral assistant for draft recommendations.
 - Responsive dashboard with KPI summaries and a light/dark color theme.
 
+## Demo data
+
+To add a synthetic dataset, run `python manage.py seed_demo_data --members 100`.
+The command is idempotent for its `demo.*` users and `[DEMO]` records, creates
+member accounts with unusable passwords, and marks generated payments and
+attendance as synthetic. Demo accounts cannot sign in. The generated payments
+and check-ins are included in normal dashboard and report totals, so run this
+against production only when you want demo records in live analytics.
+
 ## API and security notes
 
 The API is rooted at `/api/`. Obtain JWTs from `POST /api/auth/login/` (or
